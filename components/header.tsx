@@ -33,10 +33,16 @@ export function Header() {
 
         <nav aria-label="Quick links" className="flex items-center gap-2">
           <Link
-            href="#primitives"
+            href="/dashboard"
+            className="text-xs font-medium text-foreground bg-primary/10 hover:bg-primary/20 text-primary inline-block px-2.5 py-1.5 rounded-md transition-colors"
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="/cart"
             className="hidden text-xs font-medium text-muted-foreground hover:text-foreground md:inline-block px-2.5 py-1.5 rounded-md hover:bg-muted transition-colors"
           >
-            UI Primitives
+            Cart Store
           </Link>
           <Link
             href="#zustand"

@@ -23,9 +23,15 @@ interface NavItemDef {
 
 const navItems: NavItemDef[] = [
   {
+    label: "Live Demonstration Dashboard",
+    href: "/dashboard",
+    icon: Home,
+    tag: "Status",
+  },
+  {
     label: "Architecture Overview",
     href: "/",
-    icon: Home,
+    icon: Boxes,
   },
   {
     label: "1. Accessible Primitives",
