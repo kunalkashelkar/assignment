@@ -51,6 +51,12 @@ const navItems: NavItemDef[] = [
     icon: ShieldCheck,
     tag: "next-themes",
   },
+  {
+    label: "Persistent Cart Store",
+    href: "/cart",
+    icon: Database,
+    tag: "Zustand Persist",
+  },
 ];
 
 const referenceLinks = [
