@@ -61,7 +61,7 @@ const referenceLinks = [
   },
   {
     label: "Server Components (RSC)",
-    href: "#rsc-boundary",
+    href: "/architecture",
     icon: Code2,
   },
   {
