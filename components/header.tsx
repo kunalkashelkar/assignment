@@ -50,6 +50,12 @@ export function Header() {
           >
             Server Action
           </Link>
+          <Link
+            href="/theme"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground inline-block px-2.5 py-1.5 rounded-md hover:bg-muted transition-colors"
+          >
+            Theme Architecture
+          </Link>
           <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
           <ThemeToggle />
           <a

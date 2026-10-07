@@ -45,6 +45,12 @@ const navItems: NavItemDef[] = [
     icon: SendHorizontal,
     tag: "Server Action",
   },
+  {
+    label: "Hydration & Themes",
+    href: "/theme",
+    icon: ShieldCheck,
+    tag: "next-themes",
+  },
 ];
 
 const referenceLinks = [
