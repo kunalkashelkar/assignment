@@ -57,6 +57,12 @@ const navItems: NavItemDef[] = [
     icon: Database,
     tag: "Zustand Persist",
   },
+  {
+    label: "Type-Safe Contact Form",
+    href: "/contact",
+    icon: SendHorizontal,
+    tag: "RHF + Zod",
+  },
 ];
 
 const referenceLinks = [
