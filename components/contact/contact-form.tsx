@@ -7,6 +7,10 @@ import {
   contactFormSchema,
   type ContactFormData,
 } from "@/schemas/contact-schema";
+import {
+  submitContactFormAction,
+  type ContactActionResult,
+} from "@/actions/contact-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,19 +27,23 @@ import {
   Phone,
   HelpCircle,
   MessageSquare,
+  Loader2,
+  Server,
 } from "lucide-react";
 
 export function ContactForm() {
-  const [submissionSuccess, setSubmissionSuccess] = React.useState<ContactFormData | null>(null);
+  const [serverResult, setServerResult] = React.useState<ContactActionResult | null>(null);
+  const [isPending, startTransition] = React.useTransition();
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    setError,
+    formState: { errors },
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactFormSchema),
-    mode: "onBlur", // Validates on blur and on submit
+    mode: "onBlur", // Client validation on blur
     defaultValues: {
       fullName: "",
       email: "",
@@ -45,15 +53,33 @@ export function ContactForm() {
     },
   });
 
-  const onSubmit = async (data: ContactFormData) => {
-    // In client-only validation demo, simulate network handoff latency
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setSubmissionSuccess(data);
+  const onSubmit = (data: ContactFormData) => {
+    setServerResult(null);
+
+    // Concurrency Transition: Wraps Server Action in non-blocking async transition
+    startTransition(async () => {
+      const response = await submitContactFormAction(data);
+      setServerResult(response);
+
+      if (!response.success && response.errors) {
+        // Map any server-side validation rejections back into React Hook Form
+        Object.entries(response.errors).forEach(([field, messages]) => {
+          if (messages && messages[0]) {
+            setError(field as keyof ContactFormData, {
+              type: "server",
+              message: messages[0],
+            });
+          }
+        });
+      } else if (response.success) {
+        reset();
+      }
+    });
   };
 
   const handleReset = () => {
     reset();
-    setSubmissionSuccess(null);
+    setServerResult(null);
   };
 
   return (
@@ -70,12 +96,17 @@ export function ContactForm() {
               Inquiry &amp; Support Form
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Every field validates through the canonical Zod schema before submission.
+              Client validation with Zod resolver &rarr; Server Action with secondary Zod verification.
             </p>
           </div>
-          <Badge variant="outline" className="font-mono text-[10px] w-fit">
-            zodResolver(contactFormSchema)
-          </Badge>
+          <div className="flex items-center gap-1.5">
+            <Badge variant="outline" className="font-mono text-[10px]">
+              Client: RHF + Zod
+            </Badge>
+            <Badge variant="secondary" className="font-mono text-[10px]">
+              Server Action: &quot;use server&quot;
+            </Badge>
+          </div>
         </div>
 
         {/* Full Name & Email Row */}
@@ -90,6 +121,7 @@ export function ContactForm() {
               id="fullName"
               placeholder="e.g. Eleanor Vance"
               autoComplete="name"
+              disabled={isPending}
               {...register("fullName")}
               aria-invalid={Boolean(errors.fullName)}
               aria-describedby={errors.fullName ? "fullName-error" : undefined}
@@ -114,6 +146,7 @@ export function ContactForm() {
               type="email"
               placeholder="eleanor@university.edu"
               autoComplete="email"
+              disabled={isPending}
               {...register("email")}
               aria-invalid={Boolean(errors.email)}
               aria-describedby={errors.email ? "email-error" : undefined}
@@ -141,6 +174,7 @@ export function ContactForm() {
               type="tel"
               placeholder="+1 (555) 019-2834"
               autoComplete="tel"
+              disabled={isPending}
               {...register("phone")}
               aria-invalid={Boolean(errors.phone)}
               aria-describedby={errors.phone ? "phone-error" : undefined}
@@ -163,6 +197,7 @@ export function ContactForm() {
             <Input
               id="subject"
               placeholder="e.g. Course architecture question"
+              disabled={isPending}
               {...register("subject")}
               aria-invalid={Boolean(errors.subject)}
               aria-describedby={errors.subject ? "subject-error" : undefined}
@@ -187,6 +222,7 @@ export function ContactForm() {
             id="message"
             rows={4}
             placeholder="Please detail your question or technical requirements (minimum 15 characters)..."
+            disabled={isPending}
             {...register("message")}
             aria-invalid={Boolean(errors.message)}
             aria-describedby={errors.message ? "message-error" : undefined}
@@ -204,11 +240,20 @@ export function ContactForm() {
         <div className="flex items-center gap-3 pt-2">
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isPending}
             className="text-xs h-9 px-5 gap-2"
           >
-            <Send className="size-3.5" />
-            <span>{isSubmitting ? "Validating & Submitting..." : "Submit Inquiry"}</span>
+            {isPending ? (
+              <>
+                <Loader2 className="size-3.5 animate-spin" />
+                <span>Executing Server Action...</span>
+              </>
+            ) : (
+              <>
+                <Send className="size-3.5" />
+                <span>Dispatch Server Action Mutation</span>
+              </>
+            )}
           </Button>
 
           <Button
@@ -216,6 +261,7 @@ export function ContactForm() {
             variant="outline"
             size="sm"
             onClick={handleReset}
+            disabled={isPending}
             className="text-xs h-9 gap-1.5"
           >
             <RotateCcw className="size-3" />
@@ -224,24 +270,51 @@ export function ContactForm() {
         </div>
       </form>
 
-      {/* Submission Success Banner */}
-      {submissionSuccess && (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-xs text-emerald-400 space-y-2 animate-in fade-in">
+      {/* Server Action Feedback UI */}
+      {serverResult && (
+        <div
+          className={`rounded-xl border p-4 text-xs space-y-2.5 animate-in fade-in ${
+            serverResult.success
+              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+              : "border-destructive/30 bg-destructive/10 text-destructive"
+          }`}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 font-semibold">
-              <CheckCircle2 className="size-4 text-emerald-400" />
-              <span>Zod Validation Succeeded! Form Data Ingested</span>
+              {serverResult.success ? (
+                <CheckCircle2 className="size-4 text-emerald-400" />
+              ) : (
+                <AlertCircle className="size-4 text-destructive" />
+              )}
+              <span>
+                {serverResult.success
+                  ? "Server Action Execution Verified!"
+                  : "Server Action Validation Rejection"}
+              </span>
             </div>
-            <Badge variant="outline" className="border-emerald-500/40 text-emerald-400 text-[10px]">
-              Type-Safe Payload
+            <Badge
+              variant={serverResult.success ? "outline" : "destructive"}
+              className="text-[10px]"
+            >
+              <Server className="size-3 mr-1" />
+              {serverResult.success ? "Status: 200 OK" : "Status: 422 Unprocessable"}
             </Badge>
           </div>
-          <p className="text-[11px] text-muted-foreground">
-            All fields satisfied the canonical constraints in <code className="text-foreground">schemas/contact-schema.ts</code>.
-          </p>
-          <pre className="mt-2 rounded bg-background/60 p-2.5 font-mono text-[10px] text-foreground overflow-x-auto border">
-            {JSON.stringify(submissionSuccess, null, 2)}
-          </pre>
+
+          <p className="text-[11px] opacity-90">{serverResult.message}</p>
+
+          {serverResult.data && (
+            <pre className="mt-2 rounded bg-background/60 p-2.5 font-mono text-[10px] text-foreground overflow-x-auto border">
+              {JSON.stringify(serverResult.data, null, 2)}
+            </pre>
+          )}
+
+          {serverResult.errors && (
+            <div className="mt-2 rounded bg-background/60 p-2 text-[10px] font-mono text-destructive border border-destructive/20 space-y-1">
+              <span className="font-bold">Server Validation Error Details:</span>
+              <pre className="overflow-x-auto">{JSON.stringify(serverResult.errors, null, 2)}</pre>
+            </div>
+          )}
         </div>
       )}
     </div>
