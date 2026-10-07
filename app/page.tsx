@@ -16,7 +16,6 @@ import {
   SendHorizontal,
   CheckCircle2,
   FolderTree,
-  Terminal,
   Cpu,
   Layers,
   ArrowRight,
@@ -155,7 +154,7 @@ export default function HomePage() {
                 </TabsContent>
                 <TabsContent value="rsc" className="pt-2 text-xs text-muted-foreground space-y-1.5">
                   <p className="text-foreground font-medium">Server Components First</p>
-                  <p>Presentational wrappers render entirely on the server. Interactive Radix roots isolate `"use client"` solely to the edge island.</p>
+                  <p>Presentational wrappers render entirely on the server. Interactive Radix roots isolate &quot;use client&quot; solely to the edge island.</p>
                 </TabsContent>
               </Tabs>
             </CardContent>

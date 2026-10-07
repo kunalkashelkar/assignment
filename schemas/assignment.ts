@@ -9,9 +9,9 @@ export const assignmentSubmissionSchema = z.object({
     .string()
     .email({ message: "Please provide a valid university or contact email" }),
   moduleTrack: z.enum(
-    ["accessible-primitives", "client-state", "form-mutations"],
+    ["accessible-primitives", "client-state", "form-mutations"] as const,
     {
-      required_error: "Please select an assignment module",
+      message: "Please select an assignment module",
     }
   ),
   codeQualityRating: z

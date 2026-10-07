@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Github, BookMarked, Terminal } from "lucide-react";
+import { BookMarked, Terminal, Code2 } from "lucide-react";
 
 export function Footer() {
   return (
@@ -30,8 +30,8 @@ export function Footer() {
             rel="noreferrer"
             className="flex items-center gap-1 hover:text-foreground transition-colors"
           >
-            <Github className="size-3.5" />
-            <span>Repo</span>
+            <Code2 className="size-3.5" />
+            <span>Repository</span>
           </Link>
         </div>
       </div>
