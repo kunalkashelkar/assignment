@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import {
   Card,
@@ -8,16 +9,34 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ContactForm } from "@/components/contact/contact-form";
 import {
-  CheckCircle2,
   FileCheck,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: "Type-Safe Contact Form | React Hook Form & Zod",
+  title: "Async Mutation UX & Server Actions | Next.js App Router",
   description:
-    "Production type-safe form implementation using React Hook Form, zodResolver, accessible labels, autocomplete attributes, and schema-driven validation in Next.js App Router.",
+    "Production-grade async mutation UX demonstrating React Suspense, loading UI, optimistic in-flight feedback, Sonner toast notifications, and server error handling.",
 };
+
+function FormLoadingFallback() {
+  return (
+    <div className="rounded-xl border bg-card p-6 space-y-4 animate-pulse" aria-busy="true">
+      <div className="h-5 w-44 rounded bg-muted" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="h-10 rounded-md bg-muted" />
+        <div className="h-10 rounded-md bg-muted" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="h-10 rounded-md bg-muted" />
+        <div className="h-10 rounded-md bg-muted" />
+      </div>
+      <div className="h-28 rounded-md bg-muted" />
+      <div className="h-9 w-36 rounded-md bg-muted" />
+    </div>
+  );
+}
 
 export default function ContactPage() {
   return (
@@ -26,30 +45,32 @@ export default function ContactPage() {
       <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-b from-card via-card to-background p-6 sm:p-8 shadow-sm">
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary mb-3">
           <FileCheck className="size-3.5" />
-          <span>Type-Safe Form Architecture &bull; Zod + React Hook Form</span>
+          <span>Async Mutation UX &bull; Suspense + Optimistic Patterns</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-          Type-Safe Form Architecture &amp; Client Validation
+          Async Mutation UX &amp; End-to-End Type Safety
         </h1>
         <p className="mt-2 text-sm text-muted-foreground max-w-3xl leading-relaxed">
-          Demonstrating zero type duplication between schema definitions and TypeScript types
-          using <code className="text-foreground font-mono">z.infer</code>, coupled with accessible
-          ARIA error associations and instant validation feedback.
+          Demonstrating non-blocking transitions via <code className="text-foreground font-mono">useTransition()</code>,
+          instant in-flight feedback, Sonner toast notifications, duplicate submission blocking,
+          and safe server validation rollbacks.
         </p>
 
         <div className="mt-6 flex flex-wrap gap-2 text-xs">
-          <Badge variant="secondary">Canonical Zod Schema</Badge>
-          <Badge variant="outline">z.infer&lt;typeof schema&gt;</Badge>
-          <Badge variant="outline">@hookform/resolvers/zod</Badge>
-          <Badge variant="outline">WAI-ARIA aria-describedby</Badge>
+          <Badge variant="secondary">React Suspense</Badge>
+          <Badge variant="outline">Optimistic In-Flight</Badge>
+          <Badge variant="outline">Sonner Toasts</Badge>
+          <Badge variant="outline">Zero False Positives</Badge>
         </div>
       </section>
 
       {/* Main Form & Architecture Spec Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left 2 Columns: The Interactive Form Island */}
+        {/* Left 2 Columns: The Interactive Form Island wrapped in Suspense */}
         <div className="lg:col-span-2 space-y-4">
-          <ContactForm />
+          <Suspense fallback={<FormLoadingFallback />}>
+            <ContactForm />
+          </Suspense>
         </div>
 
         {/* Right Column: Architectural Highlights */}
@@ -57,43 +78,39 @@ export default function ContactPage() {
           <Card>
             <CardHeader className="p-4 pb-2 border-b">
               <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2 font-semibold">
-                <ShieldCheck className="size-4 text-primary" />
-                Zero Type Duplication
+                <Sparkles className="size-4 text-primary" />
+                Optimistic UX Without Falsehoods
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-4 space-y-3 text-xs text-muted-foreground leading-relaxed">
+            <CardContent className="p-4 space-y-2.5 text-xs text-muted-foreground leading-relaxed">
               <p>
-                In standard web applications, developers frequently define an interface in TypeScript and write separate manual validation checks in JavaScript.
+                Naive optimistic UI marks operations as &ldquo;complete&rdquo; before the server responds. For critical forms, this creates high user confusion if the network or validation fails.
               </p>
-              <div className="rounded bg-muted/40 p-2.5 font-mono text-[11px] text-foreground space-y-1">
-                <span className="text-primary font-bold">1 Source of Truth:</span>
-                <p className="text-muted-foreground">const contactFormSchema = z.object(&#123; ... &#125;);</p>
-                <p className="text-emerald-500 font-semibold">type ContactFormData = z.infer&lt;typeof contactFormSchema&gt;;</p>
+              <div className="rounded border bg-muted/40 p-2.5 text-[11px] text-foreground space-y-1 font-mono">
+                <p className="text-primary font-bold">Safe Pattern:</p>
+                <p>1. In-flight optimistic banner renders.</p>
+                <p>2. Button disables; spinner activates.</p>
+                <p>3. Toast changes: Loading &rarr; Success.</p>
+                <p className="text-emerald-500 font-semibold">4. Success confirmed ONLY after 200 OK.</p>
               </div>
-              <p>
-                TypeScript types update automatically whenever validation constraints are modified in the schema.
-              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="p-4 pb-2 border-b">
               <CardTitle className="text-xs uppercase tracking-wider text-muted-foreground flex items-center gap-2 font-semibold">
-                <CheckCircle2 className="size-4 text-emerald-500" />
-                Accessibility &amp; UX Compliance
+                <ShieldCheck className="size-4 text-emerald-500" />
+                Duplicate Submission Protection
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-2 text-xs text-muted-foreground">
-              <ul className="list-disc pl-4 space-y-1.5 text-foreground text-[11px]">
-                <li>
-                  <strong>Associated Labels:</strong> Every input binds to a Radix/shadcn <code className="font-mono text-primary">&lt;Label htmlFor=&quot;...&quot;&gt;</code>.
-                </li>
-                <li>
-                  <strong>Screen-Reader Links:</strong> Errors link via <code className="font-mono text-primary">aria-describedby</code> and <code className="font-mono text-primary">aria-invalid</code>.
-                </li>
-                <li>
-                  <strong>Smart Autocomplete:</strong> Standard attributes (<code className="font-mono text-primary">name</code>, <code className="font-mono text-primary">email</code>, <code className="font-mono text-primary">tel</code>) accelerate user input.
-                </li>
+              <p>
+                Inputs and action buttons are locked while <code className="text-foreground font-mono">isPending</code> is true.
+              </p>
+              <ul className="list-disc pl-4 space-y-1 text-foreground text-[11px]">
+                <li>Prevents repeated network dispatches.</li>
+                <li>Announces loading state via <code className="font-mono text-primary">aria-busy</code>.</li>
+                <li>Preserves draft inputs if the server returns validation errors.</li>
               </ul>
             </CardContent>
           </Card>

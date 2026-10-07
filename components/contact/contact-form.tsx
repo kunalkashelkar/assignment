@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { toast } from "sonner";
 import {
   contactFormSchema,
   type ContactFormData,
@@ -29,10 +30,12 @@ import {
   MessageSquare,
   Loader2,
   Server,
+  Sparkles,
 } from "lucide-react";
 
 export function ContactForm() {
   const [serverResult, setServerResult] = React.useState<ContactActionResult | null>(null);
+  const [optimisticDraft, setOptimisticDraft] = React.useState<ContactFormData | null>(null);
   const [isPending, startTransition] = React.useTransition();
 
   const {
@@ -43,7 +46,7 @@ export function ContactForm() {
     formState: { errors },
   } = useForm<ContactFormData>({
     resolver: zodResolver(contactFormSchema),
-    mode: "onBlur", // Client validation on blur
+    mode: "onBlur",
     defaultValues: {
       fullName: "",
       email: "",
@@ -56,23 +59,55 @@ export function ContactForm() {
   const onSubmit = (data: ContactFormData) => {
     setServerResult(null);
 
-    // Concurrency Transition: Wraps Server Action in non-blocking async transition
-    startTransition(async () => {
-      const response = await submitContactFormAction(data);
-      setServerResult(response);
+    // OPTIMISTIC FEEDBACK PATTERN:
+    // We register the validated submission as an "in-flight optimistic submission"
+    // immediately to reassure the user, but we DO NOT falsely declare that the
+    // database record has been finalized before the server returns.
+    setOptimisticDraft(data);
 
-      if (!response.success && response.errors) {
-        // Map any server-side validation rejections back into React Hook Form
-        Object.entries(response.errors).forEach(([field, messages]) => {
-          if (messages && messages[0]) {
-            setError(field as keyof ContactFormData, {
-              type: "server",
-              message: messages[0],
+    const toastId = toast.loading("Dispatching inquiry to server action...", {
+      description: `Targeting server endpoint for: "${data.subject}"`,
+    });
+
+    startTransition(async () => {
+      try {
+        const response = await submitContactFormAction(data);
+        setServerResult(response);
+        setOptimisticDraft(null);
+
+        if (response.success) {
+          toast.success("Inquiry successfully processed!", {
+            id: toastId,
+            description: response.message,
+            duration: 5000,
+          });
+          reset();
+        } else {
+          toast.error("Submission rejected by server", {
+            id: toastId,
+            description: response.message,
+            duration: 6000,
+          });
+
+          // Map server-side validation rejections back into React Hook Form errors
+          if (response.errors) {
+            Object.entries(response.errors).forEach(([field, messages]) => {
+              if (messages && messages[0]) {
+                setError(field as keyof ContactFormData, {
+                  type: "server",
+                  message: messages[0],
+                });
+              }
             });
           }
+        }
+      } catch {
+        // Rollback optimistic state and display failure toast
+        setOptimisticDraft(null);
+        toast.error("Network or unexpected server failure", {
+          id: toastId,
+          description: "Could not reach server action. Your form draft has been preserved.",
         });
-      } else if (response.success) {
-        reset();
       }
     });
   };
@@ -80,6 +115,7 @@ export function ContactForm() {
   const handleReset = () => {
     reset();
     setServerResult(null);
+    setOptimisticDraft(null);
   };
 
   return (
@@ -87,7 +123,8 @@ export function ContactForm() {
       <form
         onSubmit={handleSubmit(onSubmit)}
         noValidate
-        className="space-y-5 rounded-xl border bg-card p-5 sm:p-7 shadow-sm"
+        aria-busy={isPending}
+        className="space-y-5 rounded-xl border bg-card p-5 sm:p-7 shadow-sm transition-opacity"
       >
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2 border-b">
           <div>
@@ -96,18 +133,34 @@ export function ContactForm() {
               Inquiry &amp; Support Form
             </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Client validation with Zod resolver &rarr; Server Action with secondary Zod verification.
+              Client validation with Zod resolver &rarr; Server Action with secondary Zod verification &amp; Sonner toasts.
             </p>
           </div>
           <div className="flex items-center gap-1.5">
-            <Badge variant="outline" className="font-mono text-[10px]">
-              Client: RHF + Zod
-            </Badge>
-            <Badge variant="secondary" className="font-mono text-[10px]">
-              Server Action: &quot;use server&quot;
-            </Badge>
+            {isPending ? (
+              <Badge variant="default" className="text-[10px] bg-primary animate-pulse">
+                Mutation In-Flight
+              </Badge>
+            ) : (
+              <Badge variant="secondary" className="font-mono text-[10px]">
+                Ready for Dispatch
+              </Badge>
+            )}
           </div>
         </div>
+
+        {/* Optimistic in-flight banner */}
+        {optimisticDraft && isPending && (
+          <div className="rounded-lg border border-primary/30 bg-primary/10 p-3 text-xs space-y-1 animate-in fade-in">
+            <div className="flex items-center gap-2 text-primary font-semibold">
+              <Sparkles className="size-3.5 animate-spin" />
+              <span>Optimistic Submission In-Flight:</span>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Transmitting &quot;{optimisticDraft.subject}&quot; for {optimisticDraft.fullName}. Awaiting server transaction confirmation...
+            </p>
+          </div>
+        )}
 
         {/* Full Name & Email Row */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -246,12 +299,12 @@ export function ContactForm() {
             {isPending ? (
               <>
                 <Loader2 className="size-3.5 animate-spin" />
-                <span>Executing Server Action...</span>
+                <span>Dispatching Mutation...</span>
               </>
             ) : (
               <>
                 <Send className="size-3.5" />
-                <span>Dispatch Server Action Mutation</span>
+                <span>Submit Inquiry</span>
               </>
             )}
           </Button>
@@ -270,7 +323,7 @@ export function ContactForm() {
         </div>
       </form>
 
-      {/* Server Action Feedback UI */}
+      {/* Verified Server Result Card */}
       {serverResult && (
         <div
           className={`rounded-xl border p-4 text-xs space-y-2.5 animate-in fade-in ${
@@ -288,7 +341,7 @@ export function ContactForm() {
               )}
               <span>
                 {serverResult.success
-                  ? "Server Action Execution Verified!"
+                  ? "Server Action Execution Confirmed!"
                   : "Server Action Validation Rejection"}
               </span>
             </div>
